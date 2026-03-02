@@ -1,0 +1,33 @@
+{
+  "compilerOptions": {
+    /* Output */
+    "outDir": "./dist",                // Where compiled JS goes
+    "rootDir": "./src",                 // Where source TS files are
+    "sourceMap": true,                   // Enable debugging
+    "declaration": false,                // CLI doesn't need .d.ts files (set true if you publish a library)
+    "declarationMap": false,              // Not needed without declarations
+
+    /* Module Resolution (ESM) */
+    "module": "NodeNext",                 // Use Node.js ESM rules
+    "moduleResolution": "NodeNext",        // Resolve imports like Node does
+    "target": "ES2022",                    // Modern JS features (Node 18+)
+    "types": ["node"],                     // Include Node.js types
+
+    /* Strictness */
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noUncheckedSideEffectImports": true,
+    "verbatimModuleSyntax": true,          // Preserve import/export syntax (ESM only)
+    "isolatedModules": true,                // Required for some bundlers, good practice
+    "moduleDetection": "force",             // Treat files as modules
+
+    /* Interop & Helpers */
+    "esModuleInterop": true,                // Allow default imports from CommonJS
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,                   // Skip type checks of dependencies
+    "resolveJsonModule": true                // Allow importing .json files
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}
