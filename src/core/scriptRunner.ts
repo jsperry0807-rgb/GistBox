@@ -1,7 +1,7 @@
-import { execa } from "execa";
-import path from "path";
-import fs from "fs-extra";
-import { DependencyManager } from "./dependencyManager.js";
+import { execa } from 'execa';
+import path from 'path';
+import fs from 'fs-extra';
+import { DependencyManager } from './dependencyManager.js';
 
 export async function runScript(filePath: string, args: string[] = []) {
   const ext = path.extname(filePath);
@@ -10,22 +10,22 @@ export async function runScript(filePath: string, args: string[] = []) {
 
   // Determine interpreter
   switch (ext) {
-    case ".js":
-    case ".mjs":
-    case ".cjs":
-      command = "node";
+    case '.js':
+    case '.mjs':
+    case '.cjs':
+      command = 'node';
       scriptArgs = []; // we'll set the script path later
       break;
-    case ".ts":
-      command = "ts-node";
+    case '.ts':
+      command = 'ts-node';
       scriptArgs = [filePath, ...args];
       break;
-    case ".sh":
-      command = "bash";
+    case '.sh':
+      command = 'bash';
       scriptArgs = [filePath, ...args];
       break;
-    case ".py":
-      command = "python3";
+    case '.py':
+      command = 'python3';
       scriptArgs = [filePath, ...args];
       break;
     default:
@@ -33,9 +33,9 @@ export async function runScript(filePath: string, args: string[] = []) {
   }
 
   // For Node.js scripts, use a sandbox with proper module type and dependencies
-  if (command === "node") {
+  if (command === 'node') {
     const depManager = new DependencyManager();
-    const scriptContent = await fs.readFile(filePath, "utf-8");
+    const scriptContent = await fs.readFile(filePath, 'utf-8');
     const deps = depManager.parseDependencies(scriptContent);
 
     // Ask for confirmation if there are dependencies
@@ -45,26 +45,32 @@ export async function runScript(filePath: string, args: string[] = []) {
     }
 
     if (shouldInstall) {
-      const { scriptPath, nodeModulesPath, cleanup } =
-        await depManager.createSandbox(filePath, deps);
+      const { scriptPath, nodeModulesPath, cleanup } = await depManager.createSandbox(
+        filePath,
+        deps
+      );
       const env = { ...process.env, NODE_PATH: nodeModulesPath };
       try {
-        await execa("node", [scriptPath, ...args], { stdio: "inherit", env });
+        await execa('node', [scriptPath, ...args], { stdio: 'inherit', env });
       } finally {
         // Optionally keep the sandbox for future runs (or clean up later)
-        // await cleanup();
+        await cleanup();
       }
       return;
     } else {
       // Run without dependencies (may fail if deps missing)
-      await execa("node", [filePath, ...args], { stdio: "inherit" });
+      await execa('node', [filePath, ...args], { stdio: 'inherit' });
     }
   } else {
     // Non-Node.js scripts run directly
     try {
-      await execa(command, scriptArgs, { stdio: "inherit" });
-    } catch (error: any) {
-      console.error(`\n❌ Script exited with code ${error.exitCode}`);
+      await execa(command, scriptArgs, { stdio: 'inherit' });
+    } catch (error: unknown) {
+      if (error && typeof error === 'object' && 'exitCode' in error) {
+        console.error(`\n❌ Script exited with code ${error.exitCode}`);
+      } else {
+        console.error(`\n❌ Script failed with error: ${error}`);
+      }
     }
   }
 }

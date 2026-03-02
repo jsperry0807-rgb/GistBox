@@ -1,12 +1,12 @@
-import fs from "fs-extra";
-import path from "path";
-import os from "os";
-import crypto from "crypto";
-import { execa } from "execa";
-import inquirer from "inquirer";
-import { builtinModules } from "module";
+import fs from 'fs-extra';
+import path from 'path';
+import os from 'os';
+import crypto from 'crypto';
+import { execa } from 'execa';
+import inquirer from 'inquirer';
+import { builtinModules } from 'module';
 
-const TEMP_DIR = path.join(os.homedir(), ".mycli", "temp");
+const TEMP_DIR = path.join(os.homedir(), '.mycli', 'temp');
 
 interface DepsInstallResult {
   nodeModulesPath: string;
@@ -22,10 +22,10 @@ interface SandboxResult {
 
 export class DependencyManager {
   private getDependencyHash(scriptPath: string, deps: string[]): string {
-    const hash = crypto.createHash("md5");
+    const hash = crypto.createHash('md5');
     hash.update(scriptPath);
     deps.sort().forEach((d) => hash.update(d));
-    return hash.digest("hex");
+    return hash.digest('hex');
   }
 
   /**
@@ -60,23 +60,20 @@ export class DependencyManager {
 
     // Filter out Node.js core modules and relative paths
     return Array.from(deps).filter(
-      (dep) =>
-        !dep.startsWith(".") &&
-        !dep.startsWith("/") &&
-        !builtinModules.includes(dep),
+      (dep) => !dep.startsWith('.') && !dep.startsWith('/') && !builtinModules.includes(dep)
     );
   }
 
   /**
    * Detect if a script uses ES module syntax (import/export).
    */
-  detectModuleType(scriptContent: string): "esm" | "cjs" {
+  detectModuleType(scriptContent: string): 'esm' | 'cjs' {
     // Check for import/export statements
     const hasImportExport =
       /^\s*import\s+.*\s+from\s*['"]|^\s*export\s+(default\s+)?[a-z{]|import\s*\(/im.test(
-        scriptContent,
+        scriptContent
       );
-    return hasImportExport ? "esm" : "cjs";
+    return hasImportExport ? 'esm' : 'cjs';
   }
 
   /**
@@ -85,9 +82,9 @@ export class DependencyManager {
   async confirmInstall(deps: string[]): Promise<boolean> {
     const { confirm } = await inquirer.prompt([
       {
-        type: "confirm",
-        name: "confirm",
-        message: `This gist requires the following dependencies: ${deps.join(", ")}. Install them in a temporary sandbox?`,
+        type: 'confirm',
+        name: 'confirm',
+        message: `This gist requires the following dependencies: ${deps.join(', ')}. Install them in a temporary sandbox?`,
         default: true,
       },
     ]);
@@ -97,13 +94,10 @@ export class DependencyManager {
   /**
    * Install dependencies in a temporary directory and return the path to node_modules.
    */
-  async installDependencies(
-    scriptPath: string,
-    deps: string[],
-  ): Promise<DepsInstallResult> {
+  async installDependencies(scriptPath: string, deps: string[]): Promise<DepsInstallResult> {
     const hash = this.getDependencyHash(scriptPath, deps);
     const installDir = path.join(TEMP_DIR, hash);
-    const nodeModulesPath = path.join(installDir, "node_modules");
+    const nodeModulesPath = path.join(installDir, 'node_modules');
 
     // Check if already installed
     if (await fs.pathExists(nodeModulesPath)) {
@@ -118,21 +112,21 @@ export class DependencyManager {
 
     // Generate package.json
     const pkgJson = {
-      name: "gist-deps",
-      version: "1.0.0",
+      name: 'gist-deps',
+      version: '1.0.0',
       private: true,
-      dependencies: Object.fromEntries(deps.map((d) => [d, "latest"])),
+      dependencies: Object.fromEntries(deps.map((d) => [d, 'latest'])),
     };
-    await fs.writeJSON(path.join(installDir, "package.json"), pkgJson, {
+    await fs.writeJSON(path.join(installDir, 'package.json'), pkgJson, {
       spaces: 2,
     });
 
     // Run npm install
     try {
-      await execa("npm", ["install"], { cwd: installDir, stdio: "inherit" });
+      await execa('npm', ['install'], { cwd: installDir, stdio: 'inherit' });
     } catch (error) {
       await fs.remove(installDir);
-      throw new Error(`Failed to install dependencies: ${error}`);
+      throw new Error(`Failed to install dependencies: ${error}`, { cause: error });
     }
 
     return {
@@ -144,15 +138,12 @@ export class DependencyManager {
   /**
    * Create a sandbox for a script: copies script, installs dependencies, sets up package.json.
    */
-  async createSandbox(
-    originalScriptPath: string,
-    deps: string[],
-  ): Promise<SandboxResult> {
-    const scriptContent = await fs.readFile(originalScriptPath, "utf-8");
+  async createSandbox(originalScriptPath: string, deps: string[]): Promise<SandboxResult> {
+    const scriptContent = await fs.readFile(originalScriptPath, 'utf-8');
     const moduleType = this.detectModuleType(scriptContent);
     const hash = this.getDependencyHash(originalScriptPath, deps);
     const sandboxDir = path.join(TEMP_DIR, hash);
-    const nodeModulesPath = path.join(sandboxDir, "node_modules");
+    const nodeModulesPath = path.join(sandboxDir, 'node_modules');
     const scriptFileName = path.basename(originalScriptPath);
     const scriptPath = path.join(sandboxDir, scriptFileName);
 
@@ -173,28 +164,34 @@ export class DependencyManager {
     await fs.copy(originalScriptPath, scriptPath);
 
     // Generate package.json with correct module type
-    const pkgJson: any = {
-      name: "gist-sandbox",
-      version: "1.0.0",
+    const pkgJson: {
+      name: string;
+      version: string;
+      private: boolean;
+      type?: string;
+      dependencies?: Record<string, string>;
+    } = {
+      name: 'gist-sandbox',
+      version: '1.0.0',
       private: true,
     };
-    if (moduleType === "esm") {
-      pkgJson.type = "module";
+    if (moduleType === 'esm') {
+      pkgJson.type = 'module';
     }
     if (deps.length > 0) {
-      pkgJson.dependencies = Object.fromEntries(deps.map((d) => [d, "latest"]));
+      pkgJson.dependencies = Object.fromEntries(deps.map((d) => [d, 'latest']));
     }
-    await fs.writeJSON(path.join(sandboxDir, "package.json"), pkgJson, {
+    await fs.writeJSON(path.join(sandboxDir, 'package.json'), pkgJson, {
       spaces: 2,
     });
 
     // Install dependencies if any
     if (deps.length > 0) {
       try {
-        await execa("npm", ["install"], { cwd: sandboxDir, stdio: "inherit" });
+        await execa('npm', ['install'], { cwd: sandboxDir, stdio: 'inherit' });
       } catch (error) {
         await fs.remove(sandboxDir);
-        throw new Error(`Failed to install dependencies: ${error}`);
+        throw new Error(`Failed to install dependencies: ${error}`, { cause: error });
       }
     }
 

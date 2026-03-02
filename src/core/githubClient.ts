@@ -1,14 +1,14 @@
-import { Octokit } from "@octokit/rest";
-import config from "./configManager.js";
-import type { Gist, GistDetail } from "../types/index.js";
+import { Octokit } from '@octokit/rest';
+import config from './configManager.js';
+import type { Gist, GistDetail } from '../types/index.js';
 
 export class GitHubClient {
   private octokit: Octokit;
 
   constructor() {
-    const token = config.get("githubToken");
+    const token = config.get('githubToken');
     if (!token) {
-      throw new Error("GitHub token is not set in the configuration.");
+      throw new Error('GitHub token is not set in the configuration.');
     }
     this.octokit = new Octokit({ auth: token });
   }
