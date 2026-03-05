@@ -1,6 +1,6 @@
 {
   "name": "gistbox",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "main": "index.js",
   "author": "JaSperryTech",
   "description": "A CLI tool for managing GitHub Gists",
